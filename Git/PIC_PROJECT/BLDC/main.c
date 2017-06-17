@@ -36,12 +36,12 @@ void main()
 		if (g_pwmMax <= g_pwmCount) { g_pwmCount -= g_pwmMax; }
 		
 		//*** PWM出力 ***//
-		RB0 = g_u >  g_pwmCount;
-		RB1 = g_u < -g_pwmCount;
-		RB2 = g_v >  g_pwmCount;
-		RB3 = g_v < -g_pwmCount;
-		RB4 = g_w >  g_pwmCount;
-		RB5 = g_w < -g_pwmCount;
+		if (g_pwmCount < 6) {
+			PORTB = WAVE[g_step];
+		}
+		else {	
+			PORTB = 0;
+		}	
 	}
 }
 
@@ -110,13 +110,4 @@ static void interrupt intr()
 		PORTB = 0;
 		__delay_ms(2000);
 	}
-	
-	//*** PWM値更新 ***/
-	g_u = g_v = g_w = 0;
-	if (WAVE[g_step] & UP) g_u = 5;
-	if (WAVE[g_step] & UM) g_u = -5;
-	if (WAVE[g_step] & VP) g_v = 5;
-	if (WAVE[g_step] & VM) g_v = -5;
-	if (WAVE[g_step] & WP) g_w = 5;
-	if (WAVE[g_step] & WM) g_w = -5;
 }

@@ -24,8 +24,8 @@ __CONFIG(
 //************ ---íËêî--- ************//
 //************************************//
 #define INTERVAL		10000
-#define ACCELERATION	5
-#define DECELERATION	4
+#define ACCELERATION	3
+#define DECELERATION	2
 #define STARTUP_SPEED	256
 #define RESTART_SPEED	192
 
@@ -82,10 +82,6 @@ char		g_pwmMax		= 8;
 char		g_pwmCount	= 0;
 char		g_step		= 0;
 char		g_isStartUp	= 1;
-
-signed char	g_u			= 0;
-signed char	g_v			= 0;
-signed char	g_w			= 0;
 
 short		g_tickInc		= 16;
 short		g_tickCount	= 0;

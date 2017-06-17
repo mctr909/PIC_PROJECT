@@ -1333,10 +1333,6 @@ char g_pwmCount = 0;
 char g_step = 0;
 char g_isStartUp = 1;
 
-signed char g_u = 0;
-signed char g_v = 0;
-signed char g_w = 0;
-
 short g_tickInc = 16;
 short g_tickCount = 0;
 
@@ -1372,12 +1368,12 @@ while (1) {
 if (g_pwmMax <= g_pwmCount) { g_pwmCount -= g_pwmMax; }
 
 
-RB0 = g_u > g_pwmCount;
-RB1 = g_u < -g_pwmCount;
-RB2 = g_v > g_pwmCount;
-RB3 = g_v < -g_pwmCount;
-RB4 = g_w > g_pwmCount;
-RB5 = g_w < -g_pwmCount;
+if (g_pwmCount < 6) {
+PORTB = WAVE[g_step];
+}
+else {
+PORTB = 0;
+}
 }
 }
 
@@ -1418,20 +1414,20 @@ g_tickCount -= 10000;
 if (g_isStartUp == 1) {
 
 
-g_tickInc += 5;
+g_tickInc += 3;
 g_step = (g_step + 1) % 12;
 }
 else {
 
 if ((PORTA & SENS_MASK[g_step]) ^ SENS_SIGN[g_step]) {
 
-g_tickInc += 5;
+g_tickInc += 3;
 if (10000 < g_tickInc) { g_tickInc = 10000; }
 g_step = (g_step + 1) % 12;
 }
 else {
 
-g_tickInc -= 4;
+g_tickInc -= 2;
 }
 }
 
@@ -1446,13 +1442,4 @@ g_tickInc = 16;
 PORTB = 0;
 _delay((unsigned long)((2000)*(20000000/4000.0)));
 }
-
-
-g_u = g_v = g_w = 0;
-if (WAVE[g_step] & 0b00000001) g_u = 5;
-if (WAVE[g_step] & 0b00000010) g_u = -5;
-if (WAVE[g_step] & 0b00000100) g_v = 5;
-if (WAVE[g_step] & 0b00001000) g_v = -5;
-if (WAVE[g_step] & 0b00010000) g_w = 5;
-if (WAVE[g_step] & 0b00100000) g_w = -5;
 }
