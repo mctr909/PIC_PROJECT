@@ -1299,42 +1299,41 @@ volatile unsigned char EECON2 @ 0x18D;
 asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFEE & 0xFFFB & 0xFFFF & 0xFFDF & 0xFFBF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF");
 
 # 52
-const char WAVE[12] = {
-0b00000001|0b00001000, 0b00000001|0b00001000,
-0b00010000|0b00001000, 0b00010000|0b00001000,
-0b00010000|0b00000010, 0b00010000|0b00000010,
-0b00000100|0b00000010, 0b00000100|0b00000010,
-0b00000100|0b00100000, 0b00000100|0b00100000,
-0b00000001|0b00100000, 0b00000001|0b00100000
+const signed char WAVE[3][24] = { {
+61, 62, 63, 60, 48, 27, 0,-27,
+-48,-60,-63,-62,-61,-62,-63,-60,
+-48,-27, 0, 27, 48, 60, 63, 62
+}, {
+-48,-60,-63,-62,-61,-62,-63,-60,
+-48,-27, 0, 27, 48, 60, 63, 62,
+61, 62, 63, 60, 48, 27, 0,-27
+}, {
+-48,-27, 0, 27, 48, 60, 63, 62,
+61, 62, 63, 60, 48, 27, 0,-27,
+-48,-60,-63,-62,-61,-62,-63,-60
+} };
+
+const unsigned char SENS_MASK[24] = {
+0b00000100, 0b00000100, 0b00001000, 0b00001000, 0b00001000, 0b00001000, 0b00010000, 0b00010000,
+0b00010000, 0b00010000, 0b00000100, 0b00000100, 0b00000100, 0b00000100, 0b00001000, 0b00001000,
+0b00001000, 0b00001000, 0b00010000, 0b00010000, 0b00010000, 0b00010000, 0b00000100, 0b00000100
 };
 
-const char SENS_MASK[12] = {
-0b00000100,
-0b00001000, 0b00001000,
-0b00010000, 0b00010000,
-0b00000100, 0b00000100,
-0b00001000, 0b00001000,
-0b00010000, 0b00010000,
-0b00000100
+const unsigned char SENS_SIGN[24] = {
+0, 0, 0b00001000, 0b00001000, 0b00001000, 0b00001000, 0, 0,
+0, 0, 0b00000100, 0b00000100, 0b00000100, 0b00000100, 0, 0,
+0, 0, 0b00010000, 0b00010000, 0b00010000, 0b00010000, 0, 0
 };
 
-const char SENS_SIGN[12] = {
-0,
-0b00001000, 0b00001000,
-0, 0,
-0b00000100, 0b00000100,
-0, 0,
-0b00010000, 0b00010000,
-0
-};
-
-char g_pwmMax = 8;
-char g_pwmCount = 0;
+char g_pwmCount = 4;
+char g_pwmMax = 80;
+char g_pwmInc = 32;
+char g_pwm = 0;
 char g_step = 0;
 char g_isStartUp = 1;
 
-short g_tickInc = 16;
 short g_tickCount = 0;
+short g_tickInc = 10;
 
 # 8 "C:\Users\owner\Desktop\Git\PIC_PROJECT\BLDC\main.c"
 void main()
@@ -1364,16 +1363,23 @@ T1CONbits.TMR1ON = 1;
 
 while (1) {
 
-++g_pwmCount;
-if (g_pwmMax <= g_pwmCount) { g_pwmCount -= g_pwmMax; }
+g_pwmCount += g_pwmInc;
+if (g_pwmMax <= g_pwmCount) {
+g_pwmCount -= g_pwmMax;
+}
 
 
-if (g_pwmCount < 6) {
-PORTB = WAVE[g_step];
-}
-else {
-PORTB = 0;
-}
+g_pwm = 0;
+if (g_pwmCount < WAVE[0][g_step]) g_pwm |= 0b00000001;
+if (WAVE[0][g_step] < -g_pwmCount) g_pwm |= 0b00000010;
+
+if (g_pwmCount < WAVE[1][g_step]) g_pwm |= 0b00000100;
+if (WAVE[1][g_step] < -g_pwmCount) g_pwm |= 0b00001000;
+
+if (g_pwmCount < WAVE[2][g_step]) g_pwm |= 0b00010000;
+if (WAVE[2][g_step] < -g_pwmCount) g_pwm |= 0b00100000;
+
+PORTB = g_pwm;
 }
 }
 
@@ -1408,36 +1414,42 @@ TMR1 = 0xFEFF;
 PIR1bits.TMR1IF = 0;
 
 g_tickCount += g_tickInc;
-if (g_tickCount < 10000) { return; }
-g_tickCount -= 10000;
+if (g_tickCount < 5000) { return; }
+g_tickCount -= 5000;
 
 if (g_isStartUp == 1) {
 
+g_step = (g_step + 1) % 24;
 
-g_tickInc += 3;
-g_step = (g_step + 1) % 12;
+++g_tickInc;
 }
 else {
 
 if ((PORTA & SENS_MASK[g_step]) ^ SENS_SIGN[g_step]) {
 
-g_tickInc += 3;
-if (10000 < g_tickInc) { g_tickInc = 10000; }
-g_step = (g_step + 1) % 12;
+++g_tickInc;
+if (5000 < g_tickInc) { g_tickInc = 5000; }
+g_step = (g_step + 1) % 24;
 }
 else {
 
-g_tickInc -= 2;
+g_tickInc -= 5;
 }
 }
 
 
-if ((g_isStartUp == 1) && (256 < g_tickInc)) {
+if ((g_isStartUp == 1) && (768 < g_tickInc)) {
 g_isStartUp = 0;
+g_pwmMax = 64;
+g_pwmInc = 40;
+g_pwmCount = 4;
 }
-else if ((g_isStartUp == 0) && (g_tickInc < 192)) {
+else if ((g_isStartUp == 0) && (g_tickInc < 512)) {
 g_isStartUp = 1;
-g_tickInc = 16;
+g_tickInc = 10;
+g_pwmMax = 80;
+g_pwmInc = 32;
+g_pwmCount = 4;
 
 PORTB = 0;
 _delay((unsigned long)((2000)*(20000000/4000.0)));

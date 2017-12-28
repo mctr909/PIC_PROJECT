@@ -32,16 +32,23 @@ void main()
 	
 	while (1) {
 		//*** 鋸歯波生成 ***//
-		++g_pwmCount;
-		if (g_pwmMax <= g_pwmCount) { g_pwmCount -= g_pwmMax; }
-		
-		//*** PWM出力 ***//
-		if (g_pwmCount < 6) {
-			PORTB = WAVE[g_step];
+		g_pwmCount += g_pwmInc;
+		if (g_pwmMax <= g_pwmCount) {
+			g_pwmCount -= g_pwmMax;
 		}
-		else {	
-			PORTB = 0;
-		}	
+
+		//*** PWM出力 ***//
+		g_pwm = 0;
+		if (g_pwmCount < WAVE[0][g_step]) g_pwm |= UP;
+		if (WAVE[0][g_step] < -g_pwmCount) g_pwm |= UM;
+		
+		if (g_pwmCount < WAVE[1][g_step]) g_pwm |= VP;
+		if (WAVE[1][g_step] < -g_pwmCount) g_pwm |= VM;
+		
+		if (g_pwmCount < WAVE[2][g_step]) g_pwm |= WP;
+		if (WAVE[2][g_step] < -g_pwmCount) g_pwm |= WM;
+		
+		PORTB = g_pwm;
 	}
 }
 
@@ -80,16 +87,16 @@ static void interrupt intr()
 	g_tickCount -= INTERVAL;
 	
 	if (g_isStartUp == 1) {
-		//*** 起動時強制励磁 ***//	
-		//*** 加速 ***//
-		g_tickInc += ACCELERATION;
+		//*** 強制励磁 ***//	
 		g_step = (g_step + 1) % STEPS;
+		//*** 加速 ***//
+		++g_tickInc;
 	}
 	else {
-		//*** 定常時同期励磁 ***//
+		//*** 同期励磁 ***//
 		if ((PORTA & SENS_MASK[g_step]) ^ SENS_SIGN[g_step]) {
 			//*** 加速 ***//
-			g_tickInc += ACCELERATION;
+			++g_tickInc;
 			if (INTERVAL < g_tickInc) { g_tickInc = INTERVAL; }
 			g_step = (g_step + 1) % STEPS;
 		}
@@ -99,13 +106,19 @@ static void interrupt intr()
 		}
 	}
 	
-	//*** 起動・定常切り替え判定 ***//
+	//*** 起動・定常切り替え ***//
 	if ((g_isStartUp == 1) && (STARTUP_SPEED < g_tickInc)) {
 		g_isStartUp = 0;
+		g_pwmMax = 64;
+		g_pwmInc = 40;
+		g_pwmCount = 4;
 	}
 	else if ((g_isStartUp == 0) && (g_tickInc < RESTART_SPEED)) {
 		g_isStartUp = 1;
-		g_tickInc = 16;
+		g_tickInc = START_SPEED;
+		g_pwmMax = 80;
+		g_pwmInc = 32;
+		g_pwmCount = 4;
 		
 		PORTB = 0;
 		__delay_ms(2000);

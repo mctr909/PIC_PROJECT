@@ -23,13 +23,13 @@ __CONFIG(
 //************************************//
 //************ ---íËêî--- ************//
 //************************************//
-#define INTERVAL		10000
-#define ACCELERATION	3
-#define DECELERATION	2
-#define STARTUP_SPEED	256
-#define RESTART_SPEED	192
+#define INTERVAL		5000
+#define DECELERATION	5
+#define START_SPEED	10
+#define STARTUP_SPEED	768
+#define RESTART_SPEED	512
 
-#define STEPS			12
+#define STEPS			24
 
 // PORTA     76543210
 //         0b***UVW**
@@ -49,39 +49,38 @@ __CONFIG(
 //************************************//
 //************ ÉOÉçÅ[ÉoÉã ************//
 //************************************//
-const char WAVE[STEPS] = {
-	UP|VM, UP|VM, //  1,-1, 0
-	WP|VM, WP|VM, //  0,-1, 1
-	WP|UM, WP|UM, // -1, 0, 1
-	VP|UM, VP|UM, // -1, 1, 0
-	VP|WM, VP|WM, //  0, 1,-1
-	UP|WM, UP|WM  //  1, 0,-1
+const signed char WAVE[3][STEPS] = { {
+	 61, 62, 63, 60, 48, 27,  0,-27,
+	-48,-60,-63,-62,-61,-62,-63,-60,
+	-48,-27,  0, 27, 48, 60, 63, 62
+}, {
+	-48,-60,-63,-62,-61,-62,-63,-60,
+	-48,-27,  0, 27, 48, 60, 63, 62,
+	 61, 62, 63, 60, 48, 27,  0,-27
+}, {
+	-48,-27,  0, 27, 48, 60, 63, 62,
+	 61, 62, 63, 60, 48, 27,  0,-27,
+	-48,-60,-63,-62,-61,-62,-63,-60
+} };
+
+const unsigned char SENS_MASK[STEPS] = {
+	SU, SU, SV, SV, SV, SV, SW, SW,
+	SW, SW, SU, SU, SU, SU, SV, SV,
+	SV, SV, SW, SW, SW, SW, SU, SU
 };
 
-const char SENS_MASK[STEPS] = {
-	SU,     //  0, 1,-1
-	SV, SV, //  1, 0,-1
-	SW, SW, //  1,-1, 0
-	SU, SU, //  0,-1, 1
-	SV, SV, // -1, 0, 1
-	SW, SW, // -1, 1, 0
-	SU      //  0, 1,-1
+const unsigned char SENS_SIGN[STEPS] = {
+	 0,  0, SV, SV, SV, SV,  0,  0,
+	 0,  0, SU, SU, SU, SU,  0,  0,
+	 0,  0, SW, SW, SW, SW,  0,  0
 };
 
-const char SENS_SIGN[STEPS] = {
-	 0,     //  0, 1,-1
-	SV, SV, //  1, 0,-1
-	 0,  0, //  1,-1, 0
-	SU, SU, //  0,-1, 1
-	 0,  0, // -1, 0, 1
-	SW, SW, // -1, 1, 0
-	 0      //  0, 1,-1
-};
-
-char		g_pwmMax		= 8;
-char		g_pwmCount	= 0;
+char		g_pwmCount	= 4;
+char		g_pwmMax		= 80;
+char		g_pwmInc		= 32;
+char		g_pwm		= 0;
 char		g_step		= 0;
 char		g_isStartUp	= 1;
 
-short		g_tickInc		= 16;
 short		g_tickCount	= 0;
+short		g_tickInc		= START_SPEED;
